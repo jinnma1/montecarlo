@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>モンテカルロ法 ベット管理ツール</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--bg:#0f1115;--card:#161922;--muted:#8a8fa3;--fg:#e8eaf1;--acc:#5aa2ff;--danger:#ff6470;--ok:#59d185}
+    body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Noto Sans JP, sans-serif}
+    .wrap{max-width:960px;margin:32px auto;padding:0 16px}
+    h1{font-size:22px;margin:0 0 14px}
+    .card{background:var(--card);border-radius:14px;padding:16px 18px;margin:14px 0;border:1px solid #202534}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    label{font-size:14px;color:var(--muted)}
+    input[type="number"]{background:#0e1118;color:var(--fg);border:1px solid #2a3042;border-radius:10px;padding:10px 12px;width:180px}
+    .btn{cursor:pointer;border:0;border-radius:12px;padding:10px 14px;font-weight:600}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-win{background:var(--ok)}
+    .btn-lose{background:var(--danger)}
+    .btn-reset{background:#2a3042;color:#d6daf0}
+    .pill{display:inline-block;border:1px solid #2a3042;background:#0e1118;border-radius:999px;padding:6px 10px;margin-right:8px}
+    .seq{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+    .grid{width:100%;border-collapse:collapse;margin-top:8px}
+    .grid th,.grid td{border-bottom:1px solid #232838;padding:8px 6px;text-align:right;font-variant-numeric:tabular-nums}
+    .grid th{color:#b4b8cb;font-weight:600}
+    .muted{color:var(--muted)}
+    .big{font-size:22px;font-weight:700}
+    .tip{font-size:12px;color:#a7abc0}
+    .foot{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{background:#0e1118;border:1px solid #2a3042;border-radius:10px;padding:6px 10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>モンテカルロ法 ベット管理ツール</h1>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>初期損切り（1ユニットの金額, 例: 50000）</label><br/>
+          <input id="unitInput" type="number" min="0" step="1" placeholder="50000" />
+        </div>
+        <div>
+          <div class="pill">現在の数列： <span id="seq" class="seq"></span></div>
+          <div class="pill">次のベット（ユニット）：<span id="betUnits" class="big"></span></div>
+          <div class="pill">次のベット（円）：<span id="betMoney" class="big"></span></div>
+        </div>
+      </div>
+      <div style="margin-top:12px" class="row">
+        <button id="winBtn" class="btn btn-win">勝ち（Win）</button>
+        <button id="loseBtn" class="btn btn-lose">負け（Lose）</button>
+        <button id="resetBtn" class="btn btn-reset">リセット</button>
+        <span class="tip">※ルール：負け→右端にベット数を追加／勝ち→左右端を削除。1個だけ残って「1」になったらサイクル完了（+1ユニット）→ [0,1] にリセット。1個で2以上なら ⌊n/2⌋ と ⌈n/2⌉ に分解。</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="foot">
+        <div class="chip">累計サイクル勝ち：<strong id="cycles">0</strong></div>
+        <div class="chip">実現損益（ユニット）：<strong id="pnlUnits">0</strong></div>
+        <div class="chip">実現損益（円）：<strong id="pnlMoney">0</strong></div>
+      </div>
+
+      <table class="grid" id="logTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">ステップ</th>
+            <th style="text-align:left">結果</th>
+            <th>ベット(ユニット)</th>
+            <th>損益(ユニット)</th>
+            <th>損益(円)</th>
+            <th style="text-align:left">数列の状態</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card muted">
+      <div>メモ：</div>
+      <ul>
+        <li>ベット額＝「左端＋右端」。</li>
+        <li>勝ち：左右端を消去。配列が空 or 1のみになればサイクル完了（+1ユニット）→ <span class="seq">[0,1]</span> にリセット。</li>
+        <li>負け：現在のベット数を右端に追加。</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const seqEl = document.getElementById('seq');
+    const betUnitsEl = document.getElementById('betUnits');
+    const betMoneyEl = document.getElementById('betMoney');
+    const unitInput = document.getElementById('unitInput');
+    const winBtn = document.getElementById('winBtn');
+    const loseBtn = document.getElementById('loseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const logBody = document.querySelector('#logTable tbody');
+    const cyclesEl = document.getElementById('cycles');
+    const pnlUnitsEl = document.getElementById('pnlUnits');
+    const pnlMoneyEl = document.getElementById('pnlMoney');
+
+    let seq = [0,1];
+    let step = 0;
+    let cycles = 0;
+    let pnlUnits = 0;
+
+    function yen(n){ return n.toLocaleString('ja-JP'); }
+    function showSeq(){ seqEl.textContent = `[${seq.join(', ')}]`; }
+
+    function nextBetUnits(){
+      if (seq.length === 0) return 0;
+      if (seq.length === 1) {
+        // 1個だけの時は、1なら次はリセット（ベットしない）、2以上は分解してから計算
+        if (seq[0] === 1) return 0;
+        // 分解してからの次ベットは、その新しい配列での左右和になるため、ここでは便宜上2つに割った後の和を返す
+        const a = Math.floor(seq[0]/2), b = Math.ceil(seq[0]/2);
+        return a + b; // = 元の値
+      }
+      return seq[0] + seq[seq.length-1];
+    }
+
+    function updateUI(){
+      showSeq();
+      const units = nextBetUnits();
+      betUnitsEl.textContent = units;
+      const unitMoney = Number(unitInput.value || 0);
+      betMoneyEl.textContent = yen(units * unitMoney);
+      cyclesEl.textContent = cycles;
+      pnlUnitsEl.textContent = pnlUnits;
+      pnlMoneyEl.textContent = yen(pnlUnits * unitMoney);
+      winBtn.disabled = units === 0;
+      loseBtn.disabled = units === 0;
+    }
+
+    function pushLog(result, betU){
+      const unitMoney = Number(unitInput.value || 0);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align:left">${++step}</td>
+        <td style="text-align:left">${result}</td>
+        <td>${betU}</td>
+        <td>${result === 'Win' ? '+'+betU : '-'+betU}</td>
+        <td>${result === 'Win' ? '+' : '-'}${yen(betU * unitMoney)}</td>
+        <td style="text-align:left" class="seq">[${seq.join(', ')}]</td>
+      `;
+      logBody.prepend(tr);
+    }
+
+    function endCycle(){
+      // サイクル完了：+1ユニットを加算し、[0,1] に戻す
+      cycles += 1;
+      seq = [0,1];
+    }
+
+    function onWin(){
+      const betU = nextBetUnits();
+      if (betU === 0) return;
+      pnlUnits += betU;
+
+      // ルール：勝ち → 左端・右端を1つずつ消す
+      if (seq.length >= 2) {
+        seq.shift();
+        seq.pop();
+      } else if (seq.length === 1) {
+        // ここに来るのは通常、分解前の表示のみ想定
+        // （実際はbetU==0でブロックされる）
+      }
+
+      // 状態チェック
+      if (seq.length === 0) {
+        // 配列が空 → +1ユニットで終了
+        pushLog('Win', betU);
+        endCycle();
+      } else if (seq.length === 1) {
+        if (seq[0] === 1) {
+          // [1] → サイクル完了
+          pushLog('Win', betU);
+          endCycle();
+        } else {
+          // 単一で2以上 → 分解して続行
+          const n = seq[0];
+          seq = [Math.floor(n/2), Math.ceil(n/2)];
+          pushLog('Win', betU);
+        }
+      } else {
+        pushLog('Win', betU);
+      }
+      updateUI();
+    }
+
+    function onLose(){
+      const betU = nextBetUnits();
+      if (betU === 0) return;
+      pnlUnits -= betU;
+
+      // ルール：負け → 右端にベット数を追加
+      seq.push(betU);
+      pushLog('Lose', betU);
+      updateUI();
+    }
+
+    function resetAll(){
+      seq = [0,1];
+      step = 0;
+      cycles = 0;
+      pnlUnits = 0;
+      logBody.innerHTML = '';
+      updateUI();
+    }
+
+    winBtn.addEventListener('click', onWin);
+    loseBtn.addEventListener('click', onLose);
+    resetBtn.addEventListener('click', resetAll);
+    unitInput.addEventListener('input', updateUI);
+
+    // 初期表示
+    updateUI();
+  </script>
+</body>
+</html>
