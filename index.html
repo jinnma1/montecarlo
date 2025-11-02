@@ -17,14 +17,14 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   background:var(--bg);color:var(--text);
-  font:16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text","SF Pro Display",Segoe UI,Roboto,"Noto Sans JP",sans-serif;
+  font:16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text","SF Pro Display", Segoe UI, Roboto, "Noto Sans JP", sans-serif;
   -webkit-font-smoothing:antialiased;
   display:flex;flex-direction:column;min-height:100vh;
 }
 header{padding:18px 22px;font-weight:700;font-size:18px;border-bottom:1px solid var(--line)}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 120px;text-align:center}
 
-/* Sequence */
+/* Sequence Display */
 .seq-shell{
   display:inline-flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;
   border:1px solid var(--line);border-radius:20px;padding:16px 20px;background:var(--chip);
@@ -41,13 +41,33 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 }
 
 /* Next bet */
-.next-value{
-  margin-top:28px;
+.bet-amount{
+  margin-top:36px;
   font-weight:900;
   font-variant-numeric:tabular-nums;
-  font-size:clamp(40px,10vw,64px);
+  font-size:clamp(42px,10vw,68px);
 }
-.unit{font-size:14px;opacity:.6;margin-top:2px}
+.bet-label{font-size:15px;opacity:.6;margin-top:4px}
+
+/* Unit input */
+.unit-box{
+  margin-top:26px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+input[type="number"]{
+  width:220px;max-width:100%;
+  appearance:textfield;
+  background:var(--chip);color:var(--text);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px 14px;
+  font-size:18px;
+  text-align:center;
+  outline:none;
+}
 
 /* Footer buttons */
 .footer{
@@ -79,8 +99,13 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 
 <main>
   <div id="seqShell" class="seq-shell"></div>
-  <div id="bet" class="next-value">1</div>
-  <div class="unit">Next Bet (units)</div>
+  <div id="betY" class="bet-amount">0</div>
+  <div class="bet-label">Next Bet (円)</div>
+
+  <div class="unit-box">
+    <label for="unit">1ユニット金額</label>
+    <input id="unit" type="number" min="0" step="1" placeholder="50000" inputmode="numeric">
+  </div>
 </main>
 
 <div class="footer">
@@ -90,9 +115,10 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 
 <script>
 const $=id=>document.getElementById(id);
-const shell=$('seqShell'), bet=$('bet'), win=$('win'), lose=$('lose');
+const shell=$('seqShell'), betY=$('betY'), win=$('win'), lose=$('lose'), unit=$('unit');
 
 let seq=[0,1];
+
 function yen(n){return Number(n||0).toLocaleString('ja-JP');}
 
 function nextUnits(){
@@ -118,8 +144,9 @@ function renderSeq(){
 function updateUI(flash=false){
   renderSeq();
   const u=nextUnits();
-  bet.textContent=u;
-  if(flash){bet.classList.add('flash');setTimeout(()=>bet.classList.remove('flash'),450);}
+  const amount=u*(Number(unit.value)||0);
+  betY.textContent=yen(amount);
+  if(flash){betY.classList.add('flash');setTimeout(()=>betY.classList.remove('flash'),450);}
   win.disabled=lose.disabled=(u===0);
 }
 
@@ -144,6 +171,7 @@ function onLose(){
 
 win.addEventListener('click',onWin);
 lose.addEventListener('click',onLose);
+unit.addEventListener('input',()=>updateUI());
 updateUI();
 </script>
 </body>
