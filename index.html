@@ -3,208 +3,269 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Monte Carlo — Minimal</title>
+<title>Monte Carlo</title>
 <meta name="color-scheme" content="light dark" />
 
 <style>
-/* ======== Minimal, information-first design ======== */
+/* ===== Apple-ish minimal: quiet palette, strong type, plenty of air ===== */
 :root{
-  --bg:#0b0c10; --surface:#12141a; --text:#e8ebf0; --muted:#9aa3b2;
-  --line:#1e222c; --accent:#6aa6ff; --ok:#47d296; --bad:#ff6b6b;
+  --bg:#ffffff; --text:#0a0a0a; --muted:#6b7280; --line:#e5e7eb;
+  --accent:#0a84ff; --ok:#34c759; --bad:#ff3b30; --chip:#f5f7fa;
 }
-@media (prefers-color-scheme: light){
+@media (prefers-color-scheme: dark){
   :root{
-    --bg:#f6f7fb; --surface:#ffffff; --text:#0b0c10; --muted:#5b6472;
-    --line:#e8eaf0; --accent:#255ef5; --ok:#10b981; --bad:#ef4444;
+    --bg:#0b0c0f; --text:#ededf0; --muted:#9aa3b2; --line:#20242c;
+    --accent:#0a84ff; --ok:#34c759; --bad:#ff453a; --chip:#13161b;
   }
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0; background:var(--bg); color:var(--text);
-  font:16px/1.6 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif;
-  letter-spacing:.2px;
+  font:16px/1.6 system-ui, -apple-system, "SF Pro Text", "SF Pro Display", Segoe UI, Roboto, "Noto Sans JP", sans-serif;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
 }
+
+/* Header */
+header{
+  position:sticky; top:0; z-index:10;
+  backdrop-filter:saturate(1.2) blur(12px);
+  background:color-mix(in oklab, var(--bg) 85%, transparent);
+  border-bottom:1px solid var(--line);
+}
+.h-inner{max-width:980px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.brand{font-weight:700;letter-spacing:.2px}
 
 /* Layout */
-.container{max-width:720px;margin:0 auto;padding:24px 16px 120px}
-h1{margin:2px 0 18px;font-size:18px;font-weight:800;letter-spacing:.3px}
+main{max-width:980px;margin:0 auto;padding:28px 20px 120px}
 
-/* Cards */
-.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin:12px 0}
+/* Hero — emphasize SEQUENCE */
+.hero{
+  text-align:center;
+  padding:8px 0 18px;
+}
+.seq-wrap{
+  display:inline-flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:flex-end;
+  user-select:text;
+}
+.seq-chip{
+  background:var(--chip);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight:700;
+  font-size: clamp(26px, 6vw, 44px);
+  line-height:1.05;
+  letter-spacing:.5px;
+}
+.seq-bracket{
+  font-size: clamp(30px, 7vw, 48px);
+  font-weight:800;
+  opacity:.6;
+  margin:0 .08em;
+}
 
-/* Top row — key facts only */
-.kpis{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-@media (max-width:640px){ .kpis{grid-template-columns:1fr} }
+/* Key numbers row */
+.kpis{
+  display:grid; gap:14px; margin-top:18px;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width:760px){ .kpis{grid-template-columns:1fr} }
 
 .kpi{
+  border:1px solid var(--line); border-radius:16px; padding:16px 18px;
   display:flex; align-items:baseline; justify-content:space-between; gap:12px;
-  border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:transparent;
 }
-.kpi .label{font-size:12px;color:var(--muted)}
-.kpi .value{font-variant-numeric:tabular-nums; font-weight:800; font-size:28px}
+.kpi .label{font-size:12px; color:var(--muted); letter-spacing:.2px}
+.kpi .value{font-variant-numeric:tabular-nums; font-weight:800; font-size:clamp(24px,4.6vw,34px)}
 
-/* Sequence & next bet */
-.seq{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
-.row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+/* Controls card */
+.card{border:1px solid var(--line); border-radius:16px; padding:18px; margin-top:16px}
+.row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; justify-content:center}
+label{font-size:12px; color:var(--muted)}
 input[type="number"]{
-  width:220px; max-width:100%;
-  background:transparent; color:var(--text);
-  border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-size:16px; outline:none;
+  width:240px; max-width:100%;
+  appearance:textfield;
+  background:var(--chip); color:var(--text);
+  border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:16px; outline:none;
 }
-.help{font-size:12px; color:var(--muted)}
+.hint{font-size:12px; color:var(--muted); text-align:center; margin-top:10px}
 
-/* Buttons — fixed footer, only two primaries + reset text */
-.footer{
-  position:fixed; inset:auto 0 0 0; background:var(--surface); border-top:1px solid var(--line);
-  padding:12px 16px; display:flex; gap:10px; align-items:center; justify-content:space-between;
-}
-.actions{display:flex; gap:10px; flex:1}
-.btn{
-  appearance:none; cursor:pointer; border:1px solid var(--line); border-radius:12px;
-  padding:14px 0; font-weight:800; font-size:16px; flex:1; transition:transform .03s ease, opacity .2s ease;
-  background:transparent; color:var(--text);
-}
-.btn:active{transform:translateY(1px)}
-.btn:disabled{opacity:.45; cursor:not-allowed}
-.btn-win{background:var(--ok); color:#08130f; border-color:transparent}
-.btn-lose{background:var(--bad); color:#fff; border-color:transparent}
-.reset{border:0; background:transparent; color:var(--muted); font-weight:700}
-
-/* Log — collapsed by default to stay clean */
-details{border:1px solid var(--line); border-radius:12px; padding:10px 12px}
-summary{cursor:pointer; list-style:none; outline:none}
+/* Log — starts collapsed to keep page clean */
+details{border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-top:16px}
+summary{cursor:pointer; list-style:none; outline:none; font-weight:700}
 summary::-webkit-details-marker{display:none}
 table{width:100%; border-collapse:collapse; margin-top:10px}
 th,td{padding:10px 6px; border-bottom:1px solid var(--line); text-align:right; font-variant-numeric:tabular-nums}
 th{font-size:12px; color:var(--muted); font-weight:700}
-td:first-child, th:first-child{ text-align:left}
-td:last-child, th:last-child{ text-align:left}
+td:first-child, th:first-child{ text-align:left }
+td:last-child, th:last-child{ text-align:left }
 
-/* Subtle feedback */
+/* Footer actions */
+.footer{
+  position:fixed; inset:auto 0 0 0; background:color-mix(in oklab, var(--bg) 92%, transparent);
+  border-top:1px solid var(--line);
+  padding:12px 20px; display:flex; gap:12px; align-items:center; justify-content:center;
+}
+.actions{display:flex; gap:12px; width:min(980px,100%); }
+.btn{
+  flex:1; min-width:140px;
+  appearance:none; cursor:pointer; border-radius:12px; padding:16px 0; font-weight:800; font-size:16px;
+  border:1px solid var(--line); background:var(--bg); color:var(--text); transition:transform .04s ease, opacity .2s ease;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn-primary{background:var(--ok); color:#06120a; border-color:transparent}
+.btn-danger{background:var(--bad); color:#fff; border-color:transparent}
+.reset{border:0; background:transparent; color:var(--muted); font-weight:700}
+
+/* Micro feedback */
 .flash{animation:flash .45s}
 @keyframes flash{
-  from{box-shadow:0 0 0 0 rgba(106,166,255,.45)}
-  to{box-shadow:0 0 0 20px rgba(106,166,255,0)}
+  from{box-shadow:0 0 0 0 rgba(10,132,255,.35)}
+  to{box-shadow:0 0 0 22px rgba(10,132,255,0)}
 }
-.badge{font-variant-numeric:tabular-nums; border:1px solid var(--line); border-radius:10px; padding:6px 10px}
-.stack{display:flex; gap:8px; flex-wrap:wrap}
+.meta{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:12px}
+.badge{border:1px solid var(--line); border-radius:10px; padding:6px 10px; font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Monte Carlo</h1>
-
-    <!-- Essentials only -->
-    <section class="card">
-      <div class="row" style="justify-content:space-between;align-items:flex-end">
-        <div>
-          <div class="help">1ユニット金額</div>
-          <input id="unit" type="number" min="0" step="1" placeholder="50000" inputmode="numeric" />
-        </div>
-        <div class="stack">
-          <div class="badge">数列 <span id="seq" class="seq">[0, 1]</span></div>
-          <div class="badge">次ベット(ユニット) <b id="betU">1</b></div>
-          <div class="badge">次ベット(円) <b id="betY">0</b></div>
-        </div>
-      </div>
-
-      <div class="kpis" style="margin-top:12px">
-        <div class="kpi">
-          <div class="label">実現損益（ユニット）</div>
-          <div id="pnlU" class="value">0</div>
-        </div>
-        <div class="kpi">
-          <div class="label">実現損益（円）</div>
-          <div id="pnlY" class="value">0</div>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div class="help">ルール：負け→右端に追加、勝ち→両端削除。配列が空 or [1] でサイクル+1→[0,1] に戻す。単一で2以上は二分割。</div>
-      </div>
-    </section>
-
-    <!-- Collapsible log -->
-    <section class="card">
-      <details id="logBox">
-        <summary>履歴を表示</summary>
-        <table>
-          <thead>
-            <tr>
-              <th style="text-align:left">ステップ</th>
-              <th style="text-align:left">結果</th>
-              <th>ベット</th>
-              <th>損益(U)</th>
-              <th>損益(円)</th>
-              <th style="text-align:left">数列</th>
-            </tr>
-          </thead>
-          <tbody id="log"></tbody>
-        </table>
-      </details>
-      <div class="row" style="justify-content:space-between;margin-top:10px">
-        <div class="stack">
-          <div class="badge">サイクル <b id="cycles">0</b></div>
-          <div class="badge">合計長さ <b id="len">2</b></div>
-        </div>
-        <button id="reset" class="reset" title="すべてリセット">リセット</button>
-      </div>
-    </section>
+<header>
+  <div class="h-inner">
+    <div class="brand">Monte Carlo</div>
+    <div class="muted" style="font-size:12px">静かで見やすい、必要十分だけ。</div>
   </div>
+</header>
 
-  <!-- Primary actions only -->
-  <div class="footer">
-    <div class="actions">
-      <button id="win"  class="btn btn-win">勝ち</button>
-      <button id="lose" class="btn btn-lose">負け</button>
+<main>
+  <!-- SEQUENCE — hero -->
+  <section class="hero">
+    <div class="seq-bracket">[</div>
+    <div id="seqChips" class="seq-wrap" aria-live="polite"></div>
+    <div class="seq-bracket">]</div>
+
+    <div class="meta">
+      <div class="badge">次ベット（ユニット） <b id="betU">1</b></div>
+      <div class="badge">次ベット（円） <b id="betY">0</b></div>
+      <div class="badge">長さ <b id="len">2</b></div>
     </div>
+  </section>
+
+  <!-- Key numbers -->
+  <section class="kpis">
+    <div class="kpi">
+      <div class="label">実現損益（ユニット）</div>
+      <div id="pnlU" class="value">0</div>
+    </div>
+    <div class="kpi">
+      <div class="label">実現損益（円）</div>
+      <div id="pnlY" class="value">0</div>
+    </div>
+  </section>
+
+  <!-- Controls -->
+  <section class="card">
+    <div class="row">
+      <div>
+        <label>1ユニット金額</label><br>
+        <input id="unit" type="number" min="0" step="1" placeholder="50000" inputmode="numeric">
+      </div>
+      <button id="reset" class="reset" title="すべてリセット">リセット</button>
+    </div>
+    <div class="hint">負け＝右端に追加／勝ち＝両端削除。配列が空 or [1] でサイクル＋1→[0,1] に戻す。単一が2以上は二分割。</div>
+
+    <details>
+      <summary>履歴</summary>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">ステップ</th>
+            <th style="text-align:left">結果</th>
+            <th>ベット</th>
+            <th>損益(U)</th>
+            <th>損益(円)</th>
+            <th style="text-align:left">数列</th>
+          </tr>
+        </thead>
+        <tbody id="log"></tbody>
+      </table>
+    </details>
+
+    <div class="meta" style="margin-top:10px">
+      <div class="badge">サイクル <b id="cycles">0</b></div>
+    </div>
+  </section>
+</main>
+
+<!-- Primary actions -->
+<div class="footer">
+  <div class="actions">
+    <button id="win"  class="btn btn-primary">勝ち</button>
+    <button id="lose" class="btn btn-danger">負け</button>
   </div>
+</div>
 
 <script>
-/* ======== State ======== */
-const el = (id)=>document.getElementById(id);
-const seqEl=el('seq'), betU=el('betU'), betY=el('betY');
-const pnlU=el('pnlU'), pnlY=el('pnlY'), unit=el('unit');
-const win=el('win'), lose=el('lose'), resetBtn=el('reset');
-const log=el('log'), cyclesEl=el('cycles'), lenEl=el('len');
+/* ===== Core state ===== */
+const $ = id => document.getElementById(id);
+const chips = $('seqChips'), betU=$('betU'), betY=$('betY'), lenEl=$('len');
+const pnlU=$('pnlU'), pnlY=$('pnlY'), unit=$('unit');
+const win=$('win'), lose=$('lose'), reset=$('reset'), log=$('log'), cyclesEl=$('cycles');
 
-const S = {
-  load(){ try{return JSON.parse(localStorage.getItem('mc_minimal')||'{}')}catch{ return {} } },
-  save(v){ localStorage.setItem('mc_minimal', JSON.stringify(v)) }
+const Store = {
+  load(){ try{return JSON.parse(localStorage.getItem('mc_apple_min')||'{}')}catch{return{}} },
+  save(v){ localStorage.setItem('mc_apple_min', JSON.stringify(v)); }
 };
 
 let seq=[0,1], step=0, cycles=0, pnlUnits=0;
 
-/* ======== Logic ======== */
+/* ===== Helpers ===== */
 const yen = n => Number(n||0).toLocaleString('ja-JP');
+
+function renderSequence(){
+  chips.innerHTML = '';
+  seq.forEach(n=>{
+    const s=document.createElement('span');
+    s.className='seq-chip';
+    s.textContent = n;
+    chips.appendChild(s);
+  });
+}
 
 function nextUnits(){
   if(!seq.length) return 0;
   if(seq.length===1){
     if(seq[0]===1) return 0;
     const a=Math.floor(seq[0]/2), b=Math.ceil(seq[0]/2);
-    return a+b; // =元の値
+    return a+b;
   }
   return seq[0]+seq[seq.length-1];
 }
 
 function updateUI(flash=false){
-  seqEl.textContent='['+seq.join(', ')+']';
+  renderSequence();
   lenEl.textContent = seq.length;
-  const u=nextUnits();
-  betU.textContent=u;
-  betY.textContent=yen(u*Number(unit.value||0));
-  pnlU.textContent=pnlUnits;
-  pnlY.textContent=yen(pnlUnits*Number(unit.value||0));
-  win.disabled=lose.disabled=(u===0);
-  if(flash){ betU.classList.add('flash'); betY.classList.add('flash'); setTimeout(()=>{betU.classList.remove('flash'); betY.classList.remove('flash')},450); }
-  S.save({seq,step,cycles,pnlUnits,unit:Number(unit.value||0)});
-  cyclesEl.textContent=cycles;
+
+  const u = nextUnits();
+  betU.textContent = u;
+  betY.textContent = yen(u * Number(unit.value||0));
+  pnlU.textContent = pnlUnits;
+  pnlY.textContent = yen(pnlUnits * Number(unit.value||0));
+
+  win.disabled = lose.disabled = (u===0);
+
+  if(flash){
+    betU.classList.add('flash'); betY.classList.add('flash');
+    setTimeout(()=>{ betU.classList.remove('flash'); betY.classList.remove('flash'); }, 450);
+  }
+
+  Store.save({seq,step,cycles,pnlUnits,unit:Number(unit.value||0)});
+  cyclesEl.textContent = cycles;
 }
 
 function pushLog(kind,u){
-  const y = u*Number(unit.value||0);
+  const y = u * Number(unit.value||0);
   const tr=document.createElement('tr');
   tr.innerHTML = `
     <td style="text-align:left">${++step}</td>
@@ -212,46 +273,48 @@ function pushLog(kind,u){
     <td>${u}</td>
     <td>${kind==='Win'? '+'+u : '-'+u}</td>
     <td>${(kind==='Win'?'+':'-')+yen(y)}</td>
-    <td style="text-align:left" class="seq">[${seq.join(', ')}]</td>`;
+    <td style="text-align:left">[${seq.join(', ')}]</td>`;
   log.prepend(tr);
 }
 
 function endCycle(){ cycles++; seq=[0,1]; }
 
-function doWin(){
+function onWin(){
   const u=nextUnits(); if(!u) return;
-  pnlUnits+=u;
+  pnlUnits += u;
   if(seq.length>=2){ seq.shift(); seq.pop(); }
   if(seq.length===0){ pushLog('Win',u); endCycle(); }
   else if(seq.length===1){
     if(seq[0]===1){ pushLog('Win',u); endCycle(); }
     else{ const n=seq[0]; seq=[Math.floor(n/2), Math.ceil(n/2)]; pushLog('Win',u); }
-  }else{ pushLog('Win',u); }
+  }else{
+    pushLog('Win',u);
+  }
   updateUI(true);
 }
 
-function doLose(){
+function onLose(){
   const u=nextUnits(); if(!u) return;
-  pnlUnits-=u; seq.push(u); pushLog('Lose',u); updateUI(true);
+  pnlUnits -= u; seq.push(u); pushLog('Lose',u); updateUI(true);
 }
 
-function doReset(){
-  if(!confirm('履歴と集計を全てリセットしますか？')) return;
+function onReset(){
+  if(!confirm('履歴と集計をすべてリセットしますか？')) return;
   seq=[0,1]; step=0; cycles=0; pnlUnits=0; log.innerHTML=''; updateUI(true);
 }
 
-/* ======== Init ======== */
-win.addEventListener('click', doWin);
-lose.addEventListener('click', doLose);
-resetBtn.addEventListener('click', doReset);
+/* ===== Init ===== */
+win.addEventListener('click', onWin);
+lose.addEventListener('click', onLose);
+reset.addEventListener('click', onReset);
 unit.addEventListener('input', ()=>updateUI(true));
 
-const saved=S.load();
-if(saved.unit!=null) unit.value=saved.unit;
-if(Array.isArray(saved.seq) && saved.seq.length) seq=saved.seq;
-if(typeof saved.step==='number') step=saved.step;
-if(typeof saved.cycles==='number') cycles=saved.cycles;
-if(typeof saved.pnlUnits==='number') pnlUnits=saved.pnlUnits;
+const s = Store.load();
+if (s.unit!=null) unit.value=s.unit;
+if (Array.isArray(s.seq) && s.seq.length) seq=s.seq;
+if (typeof s.step==='number') step=s.step;
+if (typeof s.cycles==='number') cycles=s.cycles;
+if (typeof s.pnlUnits==='number') pnlUnits=s.pnlUnits;
 
 updateUI();
 </script>
